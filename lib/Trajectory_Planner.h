@@ -28,7 +28,6 @@ namespace fzi {
             Solution solution, best_solution;
             Configs configs;
             std::string version;
-            Trajectory_Planner_Single_Axis traj_planner_single_axis;
             bool check_inputs(const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze, const Config& config);
 
             bool sync_possible_pattern1(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max, const char& axis);

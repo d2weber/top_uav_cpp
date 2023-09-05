@@ -8,7 +8,6 @@
 
 fzi::top_uav::Trajectory_Planner::Trajectory_Planner(double v_max, double a_max, std::string version)
         : version(version)
-        , traj_planner_single_axis(Trajectory_Planner_Single_Axis())
         , solution(Solution())
         , best_solution(Solution())
 {
@@ -44,9 +43,9 @@ const fzi::top_uav::Solution& fzi::top_uav::Trajectory_Planner::calc_opt_time(co
             const double& a_max_z = config.get_a_max_z();
             const double& a_min_z = -a_max_z;
 
-            double t_opt_x = traj_planner_single_axis.calc_opt_time(x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x);
-            double t_opt_y = traj_planner_single_axis.calc_opt_time(y_s, y_e, v_ys, v_ye, v_min_y, v_max_y, a_min_y, a_max_y);
-            double t_opt_z = traj_planner_single_axis.calc_opt_time(z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z);
+            double t_opt_x = Trajectory_Planner_Single_Axis::calc_opt_time(x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x);
+            double t_opt_y = Trajectory_Planner_Single_Axis::calc_opt_time(y_s, y_e, v_ys, v_ye, v_min_y, v_max_y, a_min_y, a_max_y);
+            double t_opt_z = Trajectory_Planner_Single_Axis::calc_opt_time(z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z);
             double t_opt = std::max(std::max(t_opt_x, t_opt_y), t_opt_z);
             if (version == "sota")
             {

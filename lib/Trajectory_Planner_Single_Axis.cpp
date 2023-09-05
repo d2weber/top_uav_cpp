@@ -6,7 +6,7 @@
 #include <limits>
 
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::calc_opt_time(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::calc_opt_time(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     double t_opt = std::numeric_limits<double>::max();
 
@@ -20,7 +20,7 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::calc_opt_time(const double&
     return t_opt;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case1(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case1(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////
     // CASE1: (+a, 0, -a) //////
@@ -64,7 +64,7 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case1(const double& p_s, co
     return t_tot;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case2(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case2(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////
     // CASE2: (-a, 0, +a) //////
@@ -108,7 +108,7 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case2(const double& p_s, co
     return t_tot;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case3(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case3(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////////
     // CASE3: (+a, -a) /////////////
@@ -152,7 +152,7 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case3(const double& p_s, co
     return t_tot;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case4(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case4(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////////
     // CASE4: (-a, +a) /////////////
