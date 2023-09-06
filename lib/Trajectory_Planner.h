@@ -42,13 +42,13 @@ namespace fzi {
         public:
             Trajectory_Planner(double v_max, double a_max, std::string version);
             Solution calc_opt_time(const double& x_s, const double& x_e, const double& y_s, const double& y_e, const double& z_s, const double& z_e, const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze);
-            std::optional<Solution> synchronization_possible_3d(double t_opt, double x_s, double x_e, double y_s, double y_e, double z_s, double z_e, double v_xs, double v_xe, double v_ys, double v_ye, double v_zs, double v_ze, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z);
+            std::optional<AccelerationProfile3D> synchronization_possible_3d(double t_opt, double x_s, double x_e, double y_s, double y_e, double z_s, double z_e, double v_xs, double v_xe, double v_ys, double v_ye, double v_zs, double v_ze, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z);
             std::optional<AccelerationProfile1D> synchronization_possible(const double& t_opt, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max);
 
         private:
             Solution best_solution;
             Configs configs;
-            std::string version;
+            const std::string version;
             bool check_inputs(const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze, const Config& config);
 
             std::optional<AccelerationProfile1D> sync_possible_pattern1(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max);

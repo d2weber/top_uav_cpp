@@ -54,20 +54,20 @@ Solution fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, cons
 
             // check if trajectory can be synchronized with t_opt = t_sota
             if (t_opt < t_opt_best) {
-                if (auto solution = synchronization_possible_3d(t_opt, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
+                if (auto profiles = synchronization_possible_3d(t_opt, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
                 {
                     t_opt_best = t_opt;
-                    best_solution = *solution;
+                    best_solution = Solution{.acceleration_profiles = *profiles, .time_optimal_trajectory_duration = t_opt};
                 }
                 else {
                     std::vector<double> t_sync_cand_sorted = determine_candidate_times(t_opt, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, config);
                     for (const auto& elem : t_sync_cand_sorted) {
                         if (elem < t_opt_best)
                         {
-                            if (auto solution = synchronization_possible_3d(elem, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
+                            if (auto profiles = synchronization_possible_3d(elem, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
                             {
                                 t_opt_best = elem;
-                                best_solution = *solution;
+                                best_solution = Solution{.acceleration_profiles = *profiles, .time_optimal_trajectory_duration = t_opt};
                                 break;
                             }
                         }
@@ -81,7 +81,7 @@ Solution fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, cons
     return best_solution;
 }
 
-std::optional<Solution> Trajectory_Planner::synchronization_possible_3d(double t_opt, double x_s, double x_e, double y_s, double y_e, double z_s, double z_e, double v_xs, double v_xe, double v_ys, double v_ye, double v_zs, double v_ze, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z)
+std::optional<AccelerationProfile3D> Trajectory_Planner::synchronization_possible_3d(double t_opt, double x_s, double x_e, double y_s, double y_e, double z_s, double z_e, double v_xs, double v_xe, double v_ys, double v_ye, double v_zs, double v_ze, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z)
 {
     if (auto profile_x = synchronization_possible(t_opt, x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x))
     {
@@ -89,7 +89,7 @@ std::optional<Solution> Trajectory_Planner::synchronization_possible_3d(double t
         {
             if (auto profile_z = synchronization_possible(t_opt, z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z))
             {
-                return {Solution({AccelerationProfile3D{.x=*profile_x, .y=*profile_y, .z=*profile_z}, t_opt})};
+                return AccelerationProfile3D{.x = *profile_x, .y = *profile_y, .z = *profile_z};
             }
         }
     }
