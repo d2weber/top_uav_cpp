@@ -2,7 +2,6 @@
 // Created by Fabian Meyer on 2023-02-13.
 //
 
-#include "Solution.h"
 #include "Trajectory_Planner.h"
 #include <iostream>
 #include <string>
@@ -44,69 +43,69 @@ int main() {
                                                           vz_s, vz_e);
 
     std::cout << "Optimal trajectory duration (SOTA): "
-              << std::to_string(t_opt_sota.get_time_optimal_trajectory_duration()) << std::endl;
+              << std::to_string(t_opt_sota.time_optimal_trajectory_duration) << std::endl;
     std::cout << "____________________________________________" << std::endl;
     std::cout << "Optimal trajectory duration (TOP-UAV-basic): "
-              << std::to_string(t_opt_basic.get_time_optimal_trajectory_duration()) << std::endl;
+              << std::to_string(t_opt_basic.time_optimal_trajectory_duration) << std::endl;
     std::cout << "Times x: [" <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[0].get_time_durations_segments()[0]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[0].get_time_durations_segments()[1]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[0].get_time_durations_segments()[2]) << "]" <<
+              std::to_string(t_opt_basic.acceleration_profiles.x.time_durations_segments[0]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.x.time_durations_segments[1]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.x.time_durations_segments[2]) << "]" <<
               " / Accelerations x: [" <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[0].get_accelerations_segments()[0]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[0].get_accelerations_segments()[1]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[0].get_accelerations_segments()[2]) << "]"
+              std::to_string(t_opt_basic.acceleration_profiles.x.accelerations_segments[0]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.x.accelerations_segments[1]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.x.accelerations_segments[2]) << "]"
               << std::endl;
 
     std::cout << "Times y: [" <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[1].get_time_durations_segments()[0]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[1].get_time_durations_segments()[1]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[1].get_time_durations_segments()[2]) << "]" <<
+              std::to_string(t_opt_basic.acceleration_profiles.y.time_durations_segments[0]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.y.time_durations_segments[1]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.y.time_durations_segments[2]) << "]" <<
               " / Accelerations y: [" <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[1].get_accelerations_segments()[0]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[1].get_accelerations_segments()[1]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[1].get_accelerations_segments()[2]) << "]"
+              std::to_string(t_opt_basic.acceleration_profiles.y.accelerations_segments[0]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.y.accelerations_segments[1]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.y.accelerations_segments[2]) << "]"
               << std::endl;
     std::cout << "Times z: [" <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[2].get_time_durations_segments()[0]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[2].get_time_durations_segments()[1]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[2].get_time_durations_segments()[2]) << "]" <<
+              std::to_string(t_opt_basic.acceleration_profiles.z.time_durations_segments[0]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.z.time_durations_segments[1]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.z.time_durations_segments[2]) << "]" <<
               " / Accelerations z: [" <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[2].get_accelerations_segments()[0]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[2].get_accelerations_segments()[1]) << "," <<
-              std::to_string(t_opt_basic.get_acceleration_profiles()[2].get_accelerations_segments()[2]) << "]"
+              std::to_string(t_opt_basic.acceleration_profiles.z.accelerations_segments[0]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.z.accelerations_segments[1]) << "," <<
+              std::to_string(t_opt_basic.acceleration_profiles.z.accelerations_segments[2]) << "]"
               << std::endl;
 
 
     std::cout << "____________________________________________" << std::endl;
     std::cout << "Optimal trajectory duration (TOP-UAV-improved): "
-              << std::to_string(t_opt_improved.get_time_optimal_trajectory_duration()) << std::endl;
+              << std::to_string(t_opt_improved.time_optimal_trajectory_duration) << std::endl;
     std::cout << "Times x: [" <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[0].get_time_durations_segments()[0]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[0].get_time_durations_segments()[1]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[0].get_time_durations_segments()[2]) << "]" <<
+              std::to_string(t_opt_improved.acceleration_profiles.x.time_durations_segments[0]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.x.time_durations_segments[1]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.x.time_durations_segments[2]) << "]" <<
               " / Accelerations x: [" <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[0].get_accelerations_segments()[0]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[0].get_accelerations_segments()[1]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[0].get_accelerations_segments()[2]) << "]"
+              std::to_string(t_opt_improved.acceleration_profiles.x.accelerations_segments[0]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.x.accelerations_segments[1]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.x.accelerations_segments[2]) << "]"
               << std::endl;
 
     std::cout << "Times y: [" <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[1].get_time_durations_segments()[0]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[1].get_time_durations_segments()[1]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[1].get_time_durations_segments()[2]) << "]" <<
+              std::to_string(t_opt_improved.acceleration_profiles.y.time_durations_segments[0]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.y.time_durations_segments[1]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.y.time_durations_segments[2]) << "]" <<
               " / Accelerations y: [" <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[1].get_accelerations_segments()[0]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[1].get_accelerations_segments()[1]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[1].get_accelerations_segments()[2]) << "]"
+              std::to_string(t_opt_improved.acceleration_profiles.y.accelerations_segments[0]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.y.accelerations_segments[1]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.y.accelerations_segments[2]) << "]"
               << std::endl;
     std::cout << "Times z: [" <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[2].get_time_durations_segments()[0]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[2].get_time_durations_segments()[1]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[2].get_time_durations_segments()[2]) << "]" <<
+              std::to_string(t_opt_improved.acceleration_profiles.z.time_durations_segments[0]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.z.time_durations_segments[1]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.z.time_durations_segments[2]) << "]" <<
               " / Accelerations z: [" <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[2].get_accelerations_segments()[0]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[2].get_accelerations_segments()[1]) << "," <<
-              std::to_string(t_opt_improved.get_acceleration_profiles()[2].get_accelerations_segments()[2]) << "]"
+              std::to_string(t_opt_improved.acceleration_profiles.z.accelerations_segments[0]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.z.accelerations_segments[1]) << "," <<
+              std::to_string(t_opt_improved.acceleration_profiles.z.accelerations_segments[2]) << "]"
               << std::endl;
 }

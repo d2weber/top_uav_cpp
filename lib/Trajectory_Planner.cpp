@@ -5,10 +5,10 @@
 #include "Trajectory_Planner.h"
 #include <limits>
 
+using namespace fzi::top_uav;
 
 fzi::top_uav::Trajectory_Planner::Trajectory_Planner(double v_max, double a_max, std::string version)
         : version(version)
-        , solution(Solution())
         , best_solution(Solution())
 {
     if (version == "basic" || version == "sota") {
@@ -24,7 +24,7 @@ fzi::top_uav::Trajectory_Planner::Trajectory_Planner(double v_max, double a_max,
     }
 }
 
-const fzi::top_uav::Solution& fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, const double& x_e, const double& y_s, const double& y_e, const double& z_s, const double& z_e, const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze)
+Solution fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, const double& x_e, const double& y_s, const double& y_e, const double& z_s, const double& z_e, const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze)
 {
     double t_opt_best = std::numeric_limits<double>::max();
     for (const auto& config : configs) {
@@ -49,36 +49,26 @@ const fzi::top_uav::Solution& fzi::top_uav::Trajectory_Planner::calc_opt_time(co
             double t_opt = std::max(std::max(t_opt_x, t_opt_y), t_opt_z);
             if (version == "sota")
             {
-                solution.set_time_optimal_trajectory_duration(t_opt);
-                return solution;
+                return Solution{{}, t_opt};
             }
 
             // check if trajectory can be synchronized with t_opt = t_sota
             if (t_opt < t_opt_best) {
-                bool b_synchronization_possible = true;
-                b_synchronization_possible &= synchronization_possible(t_opt, x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x, 'x');
-                b_synchronization_possible &= synchronization_possible(t_opt, y_s, y_e, v_ys, v_ye, v_min_y, v_max_y, a_min_y, a_max_y, 'y');
-                b_synchronization_possible &= synchronization_possible(t_opt, z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z, 'z');
-
-                if (b_synchronization_possible) {
-                        t_opt_best = t_opt;
-                        best_solution.copy(solution);
-                        best_solution.set_time_optimal_trajectory_duration(t_opt_best);
+                if (auto solution = synchronization_possible_3d(t_opt, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
+                {
+                    t_opt_best = t_opt;
+                    best_solution = *solution;
                 }
                 else {
                     std::vector<double> t_sync_cand_sorted = determine_candidate_times(t_opt, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, config);
                     for (const auto& elem : t_sync_cand_sorted) {
-                        if (elem < t_opt_best) {
-                            b_synchronization_possible = true;
-                            b_synchronization_possible &= synchronization_possible(elem, x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x, 'x');
-                            b_synchronization_possible &= synchronization_possible(elem, y_s, y_e, v_ys, v_ye, v_min_y, v_max_y, a_min_y, a_max_y, 'y');
-                            b_synchronization_possible &= synchronization_possible(elem, z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z, 'z');
-                            if (b_synchronization_possible) {
-
-                                    t_opt_best = elem;
-                                    best_solution.copy(solution);
-                                    best_solution.set_time_optimal_trajectory_duration(t_opt_best);
-                                    break;
+                        if (elem < t_opt_best)
+                        {
+                            if (auto solution = synchronization_possible_3d(elem, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
+                            {
+                                t_opt_best = elem;
+                                best_solution = *solution;
+                                break;
                             }
                         }
                     }
@@ -91,19 +81,40 @@ const fzi::top_uav::Solution& fzi::top_uav::Trajectory_Planner::calc_opt_time(co
     return best_solution;
 }
 
-bool fzi::top_uav::Trajectory_Planner::synchronization_possible(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max, const char& axis)
+std::optional<Solution> Trajectory_Planner::synchronization_possible_3d(double t_opt, double x_s, double x_e, double y_s, double y_e, double z_s, double z_e, double v_xs, double v_xe, double v_ys, double v_ye, double v_zs, double v_ze, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z)
 {
-    bool sync_valid = false;
-    sync_valid |= sync_possible_pattern1(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max, axis);
-    if (sync_valid) { return true; };
-    sync_valid |= sync_possible_pattern2(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max, axis);
-    if (sync_valid) { return true; };
-    sync_valid |= sync_possible_pattern3(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max, axis);
-    if (sync_valid) { return true; };
-    sync_valid |= sync_possible_pattern4(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max, axis);
-    if (sync_valid) { return true; };
+    if (auto profile_x = synchronization_possible(t_opt, x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x))
+    {
+        if (auto profile_y = synchronization_possible(t_opt, y_s, y_e, v_ys, v_ye, v_min_y, v_max_y, a_min_y, a_max_y))
+        {
+            if (auto profile_z = synchronization_possible(t_opt, z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z))
+            {
+                return {Solution({AccelerationProfile3D{.x=*profile_x, .y=*profile_y, .z=*profile_z}, t_opt})};
+            }
+        }
+    }
+    return std::nullopt;
+}
 
-    return false;
+std::optional<AccelerationProfile1D> Trajectory_Planner::synchronization_possible(const double &t_sync, const double &p_s, const double &p_e, const double &v_s, const double &v_e, const double &v_min, const double &v_max, const double &a_min, const double &a_max)
+{
+    if (auto profile = sync_possible_pattern1(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    {
+        return profile;
+    }
+    else if (auto profile = sync_possible_pattern2(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    {
+        return profile;
+    }
+    else if (auto profile = sync_possible_pattern3(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    {
+        return profile;
+    }
+    else if (auto profile = sync_possible_pattern4(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    {
+        return profile;
+    }
+    return std::nullopt;
 }
 
 bool fzi::top_uav::Trajectory_Planner::check_inputs(const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze, const Config& config)
@@ -151,7 +162,7 @@ bool fzi::top_uav::Trajectory_Planner::check_inputs(const double& v_xs, const do
     return true;
 }
 
-bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern1(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max, const char& axis)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern1(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
 {
     ////////////////////////////
     // PATTERN 1: (-a, 0, +a) //
@@ -167,15 +178,14 @@ bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern1(const double& t_sy
         const double v_k = (a * t_sync + v_e + v_s + sqrt_A) / 2;
 
         if (t1 > -0.0001 && t2 > -0.0001 && t3 > -0.0001 && v_k - v_min > -0.0001 && v_k - v_max < 0.0001) {
-            solution.set_acceleration_profile(a_min, 0.0, a_max, t1, t2, t3, axis);
-
-            return true;
+            return AccelerationProfile1D{
+                .accelerations_segments = {a_min, 0.0, a_max}, .time_durations_segments = {t1, t2, t3}};
         }
     }
-    return false;
+    return std::nullopt;
 }
 
-bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern2(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max, const char& axis)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern2(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
 {
     ////////////////////////////
     // PATTERN 2: (+a, 0, -a) //
@@ -191,14 +201,14 @@ bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern2(const double& t_sy
         const double v_k = (a * t_sync + v_e + v_s - sqrt_A) / 2;
 
         if (t1 > -0.0001 && t2 > -0.0001 && t3 > -0.0001 && v_k - v_min > -0.0001 && v_k - v_max < 0.0001) {
-            solution.set_acceleration_profile(a_max, 0.0, a_min, t1, t2, t3, axis);
-            return true;
+            return AccelerationProfile1D{
+                .accelerations_segments = {a_max, 0.0, a_min}, .time_durations_segments = {t1, t2, t3}};
         }
     }
-    return false;
+    return std::nullopt;
 }
 
-bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern3(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max, const char& axis)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern3(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
 {
     ////////////////////////////
     // PATTERN 3: (+a, 0, +a) //
@@ -212,14 +222,14 @@ bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern3(const double& t_sy
         const double v_k = v_s + a * t1;
 
         if (t1 > -0.0001 && t2 > -0.0001 && t3 > -0.0001 && v_k - v_min > -0.0001 && v_k - v_max < 0.0001) {
-            solution.set_acceleration_profile(a_max, 0.0, a_max, t1, t2, t3, axis);
-            return true;
+            return AccelerationProfile1D{
+                .accelerations_segments = {a_max, 0.0, a_max}, .time_durations_segments = {t1, t2, t3}};
         }
     }
-    return false;
+    return std::nullopt;
 }
 
-bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern4(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max, const char& axis)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern4(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
 {
     ////////////////////////////
     // PATTERN 4: (-a, 0, -a) //
@@ -233,11 +243,11 @@ bool fzi::top_uav::Trajectory_Planner::sync_possible_pattern4(const double& t_sy
         const double v_k = v_s + a * t1;
 
         if (t1 > -0.0001 && t2 > -0.0001 && t3 > -0.0001 && v_k - v_min > -0.0001 && v_k - v_max < 0.0001) {
-            solution.set_acceleration_profile(a_min, 0.0, a_min, t1, t2, t3, axis);
-            return true;
+            return AccelerationProfile1D{
+                .accelerations_segments = {a_min, 0.0, a_min}, .time_durations_segments = {t1, t2, t3}};
         }
     }
-    return false;
+    return std::nullopt;
 }
 
 std::vector<double> fzi::top_uav::Trajectory_Planner::determine_candidate_times(const double& t_opt, const double& x_s, const double& x_e, const double& y_s, const double& y_e, const double& z_s, const double& z_e, const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze, const Config& config)
