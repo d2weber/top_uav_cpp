@@ -17,6 +17,8 @@
 
 namespace fzi {
     namespace top_uav {
+        static constexpr double nan = std::numeric_limits<double>::quiet_NaN();
+
         template<typename T>
         struct Vec3D {
             T x;
@@ -25,8 +27,8 @@ namespace fzi {
         };
 
         struct AccelerationProfile1D {
-            std::array<double, 3> accelerations_segments;
-            std::array<double, 3> time_durations_segments;
+            std::array<double, 3> accelerations_segments = {nan, nan, nan};
+            std::array<double, 3> time_durations_segments = {nan, nan, nan};
         };
 
         using AccelerationProfile3D = Vec3D<AccelerationProfile1D>;
@@ -34,7 +36,7 @@ namespace fzi {
         struct Solution
         {
             Vec3D<AccelerationProfile1D> acceleration_profiles;
-            double time_optimal_trajectory_duration;
+            double time_optimal_trajectory_duration = nan;
         };
 
         class Trajectory_Planner
@@ -46,7 +48,6 @@ namespace fzi {
             std::optional<AccelerationProfile1D> synchronization_possible(const double& t_opt, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max);
 
         private:
-            Solution best_solution;
             Configs configs;
             const std::string version;
             bool check_inputs(const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze, const Config& config);
