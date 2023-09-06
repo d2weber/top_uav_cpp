@@ -22,11 +22,12 @@ fzi::top_uav::Trajectory_Planner::Trajectory_Planner(double v_max, double a_max,
         throw std::invalid_argument("Wrong input of argument version! Argument must be either basic or improved");
     }
 }
-Solution fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, const double& x_e, const double& y_s, const double& y_e, const double& z_s, const double& z_e, const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze)
+
+Solution Trajectory_Planner::calc_opt_time(const Points& p)
 {
     Solution best_solution{.time_optimal_trajectory_duration = std::numeric_limits<double>::max()};
     for (const auto& config : configs) {
-        if (check_inputs(v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, config)) {
+        if (check_inputs(std::get<StartVelocity>(p), std::get<EndVelocity>(p), config)) {
             const double& v_max_x = config.get_v_max_x();
             const double& v_min_x = -v_max_x;
             const double& v_max_y = config.get_v_max_y();
@@ -41,9 +42,9 @@ Solution fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, cons
             const double& a_max_z = config.get_a_max_z();
             const double& a_min_z = -a_max_z;
 
-            double t_opt_x = Trajectory_Planner_Single_Axis::calc_opt_time(x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x);
-            double t_opt_y = Trajectory_Planner_Single_Axis::calc_opt_time(y_s, y_e, v_ys, v_ye, v_min_y, v_max_y, a_min_y, a_max_y);
-            double t_opt_z = Trajectory_Planner_Single_Axis::calc_opt_time(z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z);
+            double t_opt_x = Trajectory_Planner_Single_Axis::calc_opt_time(get_x(p), v_min_x, v_max_x, a_min_x, a_max_x);
+            double t_opt_y = Trajectory_Planner_Single_Axis::calc_opt_time(get_y(p), v_min_y, v_max_y, a_min_y, a_max_y);
+            double t_opt_z = Trajectory_Planner_Single_Axis::calc_opt_time(get_z(p), v_min_z, v_max_z, a_min_z, a_max_z);
             double t_opt = std::max(std::max(t_opt_x, t_opt_y), t_opt_z);
             if (version == "sota")
             {
@@ -52,16 +53,16 @@ Solution fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, cons
 
             // check if trajectory can be synchronized with t_opt = t_sota
             if (t_opt < best_solution.time_optimal_trajectory_duration) {
-                if (auto profiles = synchronization_possible_3d(t_opt, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
+                if (auto profiles = synchronization_possible_3d(t_opt, p, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
                 {
                     best_solution = Solution{.acceleration_profiles = *profiles, .time_optimal_trajectory_duration = t_opt};
                 }
                 else {
-                    std::vector<double> t_sync_cand_sorted = determine_candidate_times(t_opt, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, config);
+                    std::vector<double> t_sync_cand_sorted = determine_candidate_times(t_opt, p, config);
                     for (const auto& elem : t_sync_cand_sorted) {
                         if (elem < best_solution.time_optimal_trajectory_duration)
                         {
-                            if (auto profiles = synchronization_possible_3d(elem, x_s, x_e, y_s, y_e, z_s, z_e, v_xs, v_xe, v_ys, v_ye, v_zs, v_ze, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
+                            if (auto profiles = synchronization_possible_3d(elem, p, v_min_x, v_max_x, a_min_x, a_max_x, v_min_y, v_max_y, a_min_y, a_max_y, v_min_z, v_max_z, a_min_z, a_max_z))
                             {
                                 best_solution = Solution{.acceleration_profiles = *profiles, .time_optimal_trajectory_duration = elem};
                                 break;
@@ -77,13 +78,13 @@ Solution fzi::top_uav::Trajectory_Planner::calc_opt_time(const double& x_s, cons
     return best_solution;
 }
 
-std::optional<AccelerationProfile3D> Trajectory_Planner::synchronization_possible_3d(double t_opt, double x_s, double x_e, double y_s, double y_e, double z_s, double z_e, double v_xs, double v_xe, double v_ys, double v_ye, double v_zs, double v_ze, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z)
+std::optional<AccelerationProfile3D> Trajectory_Planner::synchronization_possible_3d(double t_opt, const Points &p, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z)
 {
-    if (auto profile_x = synchronization_possible(t_opt, x_s, x_e, v_xs, v_xe, v_min_x, v_max_x, a_min_x, a_max_x))
+    if (auto profile_x = synchronization_possible(t_opt, get_x(p), v_min_x, v_max_x, a_min_x, a_max_x))
     {
-        if (auto profile_y = synchronization_possible(t_opt, y_s, y_e, v_ys, v_ye, v_min_y, v_max_y, a_min_y, a_max_y))
+        if (auto profile_y = synchronization_possible(t_opt,  get_y(p), v_min_y, v_max_y, a_min_y, a_max_y))
         {
-            if (auto profile_z = synchronization_possible(t_opt, z_s, z_e, v_zs, v_ze, v_min_z, v_max_z, a_min_z, a_max_z))
+            if (auto profile_z = synchronization_possible(t_opt,  get_z(p), v_min_z, v_max_z, a_min_z, a_max_z))
             {
                 return AccelerationProfile3D{.x = *profile_x, .y = *profile_y, .z = *profile_z};
             }
@@ -92,78 +93,83 @@ std::optional<AccelerationProfile3D> Trajectory_Planner::synchronization_possibl
     return std::nullopt;
 }
 
-std::optional<AccelerationProfile1D> Trajectory_Planner::synchronization_possible(const double &t_sync, const double &p_s, const double &p_e, const double &v_s, const double &v_e, const double &v_min, const double &v_max, const double &a_min, const double &a_max)
+std::optional<AccelerationProfile1D> Trajectory_Planner::synchronization_possible(const double &t_sync, const PointsSingleDim &p, const double &v_min, const double &v_max, const double &a_min, const double &a_max)
 {
-    if (auto profile = sync_possible_pattern1(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    if (auto profile = sync_possible_pattern1(t_sync, p, v_min, v_max, a_min, a_max))
     {
         return profile;
     }
-    else if (auto profile = sync_possible_pattern2(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    else if (auto profile = sync_possible_pattern2(t_sync, p, v_min, v_max, a_min, a_max))
     {
         return profile;
     }
-    else if (auto profile = sync_possible_pattern3(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    else if (auto profile = sync_possible_pattern3(t_sync, p, v_min, v_max, a_min, a_max))
     {
         return profile;
     }
-    else if (auto profile = sync_possible_pattern4(t_sync, p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max))
+    else if (auto profile = sync_possible_pattern4(t_sync, p, v_min, v_max, a_min, a_max))
     {
         return profile;
     }
     return std::nullopt;
 }
 
-bool fzi::top_uav::Trajectory_Planner::check_inputs(const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze, const Config& config)
+bool fzi::top_uav::Trajectory_Planner::check_inputs(const StartVelocity& v_s, const EndVelocity& v_e, const Config& config)
 {
     const double& v_max_x = config.get_v_max_x();
     const double& v_max_y = config.get_v_max_y();
     const double& v_max_z = config.get_v_max_z();
 
-    if (v_xs < -v_max_x) {
+    if (v_s.x < -v_max_x) {
         return false;
     }
-    if (v_xs > v_max_x) {
+    if (v_s.x > v_max_x) {
         return false;
     }
-    if (v_xe < -v_max_x) {
+    if (v_e.x < -v_max_x) {
         return false;
     }
-    if (v_xe > v_max_x) {
+    if (v_e.x > v_max_x) {
         return false;
     }
-    if (v_ys < -v_max_y) {
+    if (v_s.y < -v_max_y) {
         return false;
     }
-    if (v_ys > v_max_y) {
+    if (v_s.y > v_max_y) {
         return false;
     }
-    if (v_ye < -v_max_y) {
+    if (v_e.y < -v_max_y) {
         return false;
     }
-    if (v_ye > v_max_y) {
+    if (v_e.y > v_max_y) {
         return false;
     }
-    if (v_zs < -v_max_z) {
+    if (v_s.z < -v_max_z) {
         return false;
     }
-    if (v_zs > v_max_z) {
+    if (v_s.z > v_max_z) {
         return false;
     }
-    if (v_ze < -v_max_z) {
+    if (v_e.z < -v_max_z) {
         return false;
     }
-    if (v_ze > v_max_z) {
+    if (v_e.z > v_max_z) {
         return false;
     }
     return true;
 }
 
-std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern1(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern1(const double& t_sync, const PointsSingleDim& p, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
 {
     ////////////////////////////
     // PATTERN 1: (-a, 0, +a) //
     ////////////////////////////
     const double& a = a_min;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     const double A = round_customized(pow2(a) * pow2(t_sync) + 2 * (v_e + v_s) * a * t_sync - 4 * p_e * a + 4 * p_s * a - pow2((v_e - v_s)));
     if (A >= 0) {
@@ -181,12 +187,17 @@ std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_poss
     return std::nullopt;
 }
 
-std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern2(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern2(const double &t_sync, const PointsSingleDim &p, const double &v_min, const double &v_max, const double &a_min, const double &a_max)
 {
     ////////////////////////////
     // PATTERN 2: (+a, 0, -a) //
     ////////////////////////////
     const double& a = a_max;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     const double  A = round_customized(pow2(a) * pow2(t_sync) + 2 * (v_e + v_s) * a * t_sync - 4 * p_e * a + 4 * p_s * a - pow2((v_e - v_s)));
     if (A >= 0) {
@@ -204,12 +215,17 @@ std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_poss
     return std::nullopt;
 }
 
-std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern3(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern3(const double& t_sync, const PointsSingleDim& p, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
 {
     ////////////////////////////
     // PATTERN 3: (+a, 0, +a) //
     ////////////////////////////
     const double& a = a_max;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     if (t_sync * a - v_e + v_s != 0) {
         const double t1 = ((-2 * v_s * t_sync + 2 * p_e - 2 * p_s) * a - pow2((v_e - v_s))) / (2 * a * (t_sync * a - v_e + v_s));
@@ -225,12 +241,17 @@ std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_poss
     return std::nullopt;
 }
 
-std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern4(const double& t_sync, const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
+std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_possible_pattern4(const double& t_sync, const PointsSingleDim& p, const double& v_min, const double& v_max, const double& a_min, const double& a_max)
 {
     ////////////////////////////
     // PATTERN 4: (-a, 0, -a) //
     ////////////////////////////
     const double& a = a_min;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     if (t_sync * a - v_e + v_s != 0) {
         const double t1 = ((-2 * v_s * t_sync + 2 * p_e - 2 * p_s) * a - pow2((v_e - v_s))) / (2 * a * (t_sync * a - v_e + v_s));
@@ -246,7 +267,7 @@ std::optional<AccelerationProfile1D> fzi::top_uav::Trajectory_Planner::sync_poss
     return std::nullopt;
 }
 
-std::vector<double> fzi::top_uav::Trajectory_Planner::determine_candidate_times(const double& t_opt, const double& x_s, const double& x_e, const double& y_s, const double& y_e, const double& z_s, const double& z_e, const double& v_xs, const double& v_xe, const double& v_ys, const double& v_ye, const double& v_zs, const double& v_ze, const Config& config)
+std::vector<double> fzi::top_uav::Trajectory_Planner::determine_candidate_times(const double& t_opt, const Points& p, const Config& config)
 {
     const double& v_max_x = config.get_v_max_x();
     const double& v_min_x = -v_max_x;
@@ -264,24 +285,24 @@ std::vector<double> fzi::top_uav::Trajectory_Planner::determine_candidate_times(
     std::vector<double> candidates;
 
     // x-axis
-    sync_pattern1(x_s, x_e, v_xs, v_xe, v_max_x, a_max_x, candidates);
-    sync_pattern2(x_s, x_e, v_xs, v_xe, v_min_x, a_min_x, candidates);
-    sync_pattern3(x_s, x_e, v_xs, v_xe, a_max_x, candidates);
-    sync_pattern4(x_s, x_e, v_xs, v_xe, a_min_x, candidates);
+    sync_pattern1(get_x(p), v_max_x, a_max_x, candidates);
+    sync_pattern2(get_x(p), v_min_x, a_min_x, candidates);
+    sync_pattern3(get_x(p), a_max_x, candidates);
+    sync_pattern4(get_x(p), a_min_x, candidates);
 
 
     //y-axis
-    sync_pattern1(y_s, y_e, v_ys, v_ye, v_max_y, a_max_y, candidates);
-    sync_pattern2(y_s, y_e, v_ys, v_ye, v_min_y, a_min_y, candidates);
-    sync_pattern3(y_s, y_e, v_ys, v_ye, a_max_y, candidates);
-    sync_pattern4(y_s, y_e, v_ys, v_ye, a_min_y, candidates);
+    sync_pattern1(get_y(p), v_max_y, a_max_y, candidates);
+    sync_pattern2(get_y(p), v_min_y, a_min_y, candidates);
+    sync_pattern3(get_y(p), a_max_y, candidates);
+    sync_pattern4(get_y(p), a_min_y, candidates);
 
 
     //z-axis
-    sync_pattern1(z_s, z_e, v_zs, v_ze, v_max_z, a_max_z, candidates);
-    sync_pattern2(z_s, z_e, v_zs, v_ze, v_min_z, a_min_z, candidates);
-    sync_pattern3(z_s, z_e, v_zs, v_ze, a_max_z, candidates);
-    sync_pattern4(z_s, z_e, v_zs, v_ze, a_min_z, candidates);
+    sync_pattern1(get_z(p), v_max_z, a_max_z, candidates);
+    sync_pattern2(get_z(p), v_min_z, a_min_z, candidates);
+    sync_pattern3(get_z(p), a_max_z, candidates);
+    sync_pattern4(get_z(p), a_min_z, candidates);
 
 
     std::vector<double> candidates_purged;
@@ -298,12 +319,17 @@ std::vector<double> fzi::top_uav::Trajectory_Planner::determine_candidate_times(
     return candidates_purged;
 }
 
-void fzi::top_uav::Trajectory_Planner::sync_pattern1(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_max, const double& a_max, std::vector<double>& candidates)
+void fzi::top_uav::Trajectory_Planner::sync_pattern1(const PointsSingleDim& p, const double& v_max, const double& a_max, std::vector<double>& candidates)
 {
     ////////////////////////////
     // PATTERN 1: (+a, 0, -a) //
     ////////////////////////////
     double a = a_max;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     // zero of equation t1(te) == 0
     if (v_s == 0) {
@@ -338,12 +364,17 @@ void fzi::top_uav::Trajectory_Planner::sync_pattern1(const double& p_s, const do
     candidates.push_back((2 * a * p_e - 2 * a * p_s + pow2(v_e) - 2 * v_e * v_max + 2 * pow2(v_max) - 2 * v_max * v_s + pow2(v_s)) / (2 * a * v_max));
 }
 
-void fzi::top_uav::Trajectory_Planner::sync_pattern2(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& v_min, const double& a_min, std::vector<double>& candidates)
+void fzi::top_uav::Trajectory_Planner::sync_pattern2(const PointsSingleDim& p, const double& v_min, const double& a_min, std::vector<double>& candidates)
 {
     ////////////////////////////
     // PATTERN 2: (-a, 0, +a) //
     ////////////////////////////
     double a = a_min;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     // zero of equation t1(te) == 0
     if (v_s == 0) {
@@ -382,12 +413,17 @@ void fzi::top_uav::Trajectory_Planner::sync_pattern2(const double& p_s, const do
     candidates.push_back((2 * a * p_e - 2 * a * p_s + pow2(v_e) - 2 * v_e * v_min + 2 * pow2(v_min) - 2 * v_min * v_s + pow2(v_s)) / (2 * a * v_min));
 }
 
-void fzi::top_uav::Trajectory_Planner::sync_pattern3(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& a_max, std::vector<double>& candidates)
+void fzi::top_uav::Trajectory_Planner::sync_pattern3(const PointsSingleDim& p, const double& a_max, std::vector<double>& candidates)
 {
     ////////////////////////////
     // PATTERN 3: (+a, 0, +a) //
     ////////////////////////////
     double a = a_max;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     // zero of equation t1(te) == 0
     if (v_s == 0) {
@@ -409,12 +445,17 @@ void fzi::top_uav::Trajectory_Planner::sync_pattern3(const double& p_s, const do
     }
 }
 
-void fzi::top_uav::Trajectory_Planner::sync_pattern4(const double& p_s, const double& p_e, const double& v_s, const double& v_e, const double& a_min, std::vector<double>& candidates)
+void fzi::top_uav::Trajectory_Planner::sync_pattern4(const PointsSingleDim& p, const double& a_min, std::vector<double>& candidates)
 {
     ////////////////////////////
     // PATTERN 4: (-a, 0, -a) //
     ////////////////////////////
     double a = a_min;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     // zero of equation t1(te) == 0
     if (v_s == 0) {

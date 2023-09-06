@@ -6,21 +6,21 @@
 #include <limits>
 
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::calc_opt_time(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::calc_opt_time(const PointsSingleDim& p, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     double t_opt = std::numeric_limits<double>::max();
 
-    double t_case1 = case1(p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max);
-    double t_case2 = case2(p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max);
-    double t_case3 = case3(p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max);
-    double t_case4 = case4(p_s, p_e, v_s, v_e, v_min, v_max, a_min, a_max);
+    double t_case1 = case1(p, v_min, v_max, a_min, a_max);
+    double t_case2 = case2(p, v_min, v_max, a_min, a_max);
+    double t_case3 = case3(p, v_min, v_max, a_min, a_max);
+    double t_case4 = case4(p, v_min, v_max, a_min, a_max);
 
     t_opt = std::min({ t_case1, t_case2, t_case3, t_case4 });
 
     return t_opt;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case1(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case1(const PointsSingleDim& p, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////
     // CASE1: (+a, 0, -a) //////
@@ -28,6 +28,11 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case1(const double p_s, con
     ////////////////////////////
 
     bool valid = true;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     double t_tot = std::numeric_limits<double>::max();
     const double t1 = (v_max - v_s) / a_max;
@@ -64,7 +69,7 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case1(const double p_s, con
     return t_tot;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case2(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case2(const PointsSingleDim& p, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////
     // CASE2: (-a, 0, +a) //////
@@ -72,6 +77,11 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case2(const double p_s, con
     ////////////////////////////
 
     bool valid = true;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     double t_tot = std::numeric_limits<double>::max();
     const double t1 = (v_min - v_s) / a_min;
@@ -108,7 +118,7 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case2(const double p_s, con
     return t_tot;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case3(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case3(const PointsSingleDim& p, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////////
     // CASE3: (+a, -a) /////////////
@@ -116,6 +126,11 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case3(const double p_s, con
     ////////////////////////////////
 
     bool valid = true;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     double t_tot = std::numeric_limits<double>::max();
     const double t1 = -((a_max * v_e - a_min * v_e - sqrt2(-2 * pow2(a_max) * a_min * p_e + 2 * pow2(a_max) * a_min * p_s + pow2(a_max) * pow2(v_e) + 2 * a_max * pow2(a_min) * p_e - 2 * a_max * pow2(a_min) * p_s - a_max * a_min * pow2(v_e) - a_max * a_min * pow2(v_s) + pow2(a_min) * pow2(v_s))) / (a_max - a_min) - v_e + v_s) / a_max;
@@ -152,7 +167,7 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case3(const double p_s, con
     return t_tot;
 }
 
-double fzi::top_uav::Trajectory_Planner_Single_Axis::case4(const double p_s, const double p_e, const double v_s, const double v_e, const double v_min, const double v_max, const double a_min, const double a_max)
+double fzi::top_uav::Trajectory_Planner_Single_Axis::case4(const PointsSingleDim& p, const double v_min, const double v_max, const double a_min, const double a_max)
 {
     ////////////////////////////////
     // CASE4: (-a, +a) /////////////
@@ -160,6 +175,11 @@ double fzi::top_uav::Trajectory_Planner_Single_Axis::case4(const double p_s, con
     ////////////////////////////////
 
     bool valid = true;
+
+    const auto p_s = std::get<StartPointCoord>(p);
+    const auto p_e = std::get<EndPointCoord>(p);
+    const auto v_s = std::get<StartVelocityCoord>(p);
+    const auto v_e = std::get<EndVelocityCoord>(p);
 
     double t_tot = std::numeric_limits<double>::max();
     const double t1 = -((a_max * v_e - a_min * v_e + sqrt2(2 * pow2(a_max) * a_min * p_e - 2 * pow2(a_max) * a_min * p_s + pow2(a_max) * pow2(v_s) - 2 * a_max * pow2(a_min) * p_e + 2 * a_max * pow2(a_min) * p_s - a_max * a_min * pow2(v_e) - a_max * a_min * pow2(v_s) + pow2(a_min) * pow2(v_e))) / (a_max - a_min) - v_e + v_s) / a_min;
