@@ -37,7 +37,7 @@ namespace fzi {
         {
         public:
             Trajectory_Planner(double v_max, double a_max, std::string version);
-            Solution calc_opt_time(const Points&);
+            const Solution calc_opt_time(const Points&);
             std::optional<AccelerationProfile3D> synchronization_possible_3d(double t_opt, const Points& p, double v_min_x, double v_max_x, double a_min_x, double a_max_x, double v_min_y, double v_max_y, double a_min_y, double a_max_y, double v_min_z, double v_max_z, double a_min_z, double a_max_z);
             std::optional<AccelerationProfile1D> synchronization_possible(const double& t_opt, const PointsSingleDim& p, const double& v_min, const double& v_max, const double& a_min, const double& a_max);
 
