@@ -23,7 +23,7 @@ fzi::top_uav::Trajectory_Planner::Trajectory_Planner(double v_max, double a_max,
     }
 }
 
-Solution Trajectory_Planner::calc_opt_time(const Points& p)
+const Solution Trajectory_Planner::calc_opt_time(const Points& p)
 {
     Solution best_solution{.time_optimal_trajectory_duration = std::numeric_limits<double>::max()};
     for (const auto& config : configs) {
